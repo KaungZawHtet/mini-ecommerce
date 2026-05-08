@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
@@ -107,7 +103,7 @@ export class AuthService {
       SESSION_INACTIVITY_TIMEOUT_MS
     ) {
       await this.revokeSession(session.id);
-      throw new ForbiddenException('Session expired due to inactivity');
+      throw new UnauthorizedException('Session expired due to inactivity');
     }
 
     const updatedSession = await this.prisma.session.update({
