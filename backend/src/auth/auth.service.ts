@@ -76,7 +76,27 @@ export class AuthService {
     return { success: true };
   }
 
-  async validateSessionToken(rawToken: string | undefined) {
+  async validateSessionTokens(rawTokens: readonly string[]) {
+    if (rawTokens.length === 0) {
+      throw new UnauthorizedException();
+    }
+
+    for (const rawToken of rawTokens) {
+      try {
+        return await this.validateSessionToken(rawToken);
+      } catch (error) {
+        if (error instanceof UnauthorizedException) {
+          continue;
+        }
+
+        throw error;
+      }
+    }
+
+    throw new UnauthorizedException();
+  }
+
+  private async validateSessionToken(rawToken: string) {
     if (!rawToken) {
       throw new UnauthorizedException();
     }

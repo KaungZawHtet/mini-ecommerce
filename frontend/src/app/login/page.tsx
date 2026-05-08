@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError, getCurrentUser, login } from "@/lib/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ApiError, login } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,24 +12,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("Password123!");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const { data: currentUser, isLoading } = useQuery({
-    queryKey: ["current-user"],
-    queryFn: getCurrentUser,
-    retry: false,
-  });
-
-  useEffect(() => {
-    if (currentUser) {
-      router.replace("/products");
-    }
-  }, [currentUser, router]);
-
   const loginMutation = useMutation({
     mutationFn: () => login(email, password),
-    onSuccess: async (authResponse) => {
+    onSuccess: (authResponse) => {
       setErrorMessage("");
       queryClient.setQueryData(["current-user"], authResponse);
-      await queryClient.invalidateQueries({ queryKey: ["current-user"] });
       router.replace("/products");
     },
     onError: (error) => {
@@ -94,7 +81,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loginMutation.isPending || isLoading}
+            disabled={loginMutation.isPending}
             className="mt-6 h-11 w-full rounded-md bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             {loginMutation.isPending ? "Signing in..." : "Sign in"}
