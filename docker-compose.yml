@@ -32,5 +32,18 @@ services:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
 
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    command: npm run dev -- --hostname 0.0.0.0
+    volumes:
+      - ./frontend/src:/app/src
+
 volumes:
   postgres_data:
