@@ -8,8 +8,8 @@ import { ApiError, login } from "@/lib/api";
 export default function LoginPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [email, setEmail] = useState("demo@example.com");
-  const [password, setPassword] = useState("Password123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
