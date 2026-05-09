@@ -1,14 +1,14 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageSizeSelector } from "./components/page-size-selector";
 import { ProductsList } from "./components/products-list";
 import { useInfiniteProducts } from "./hooks/use-infinite-products";
 import { useRequireAuth } from "./hooks/use-require-auth";
 import { logoutWithFallback } from "@/lib/api";
-
+import { useInfiniteScrollTrigger } from "./hooks/use-infinite-scroll-trigger";
 export default function ProductsPage() {
   const queryClient = useQueryClient();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -22,102 +22,16 @@ export default function ProductsPage() {
     enabled: Boolean(currentUserQuery.data),
   });
 
-  const fetchNextPage = productsQuery.fetchNextPage;
-  const hasNextPage = productsQuery.hasNextPage;
-  const isFetchingNextPage = productsQuery.isFetchingNextPage;
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-
-    if (!sentinel) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (
-          entry.isIntersecting &&
-          canFetchMoreRef.current &&
-          hasNextPage &&
-          !isFetchingNextPage
-        ) {
-          void fetchNextPage();
-        }
-      },
-      { rootMargin: "120px" },
-    );
-
-    observer.observe(sentinel);
-
-    return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
-  useEffect(() => {
-    function allowFetchAfterUserScroll({
-      requireScrollOffset = true,
-    }: {
-      requireScrollOffset?: boolean;
-    } = {}) {
-      if (
-        canFetchMoreRef.current ||
-        (requireScrollOffset && window.scrollY < 24) ||
-        productsQuery.products.length < pageSize
-      ) {
-        return;
-      }
-
-      canFetchMoreRef.current = true;
-      setCanFetchMore(true);
-
-      const sentinel = sentinelRef.current;
-
-      if (
-        sentinel &&
-        sentinel.getBoundingClientRect().top <= window.innerHeight + 120 &&
-        hasNextPage &&
-        !isFetchingNextPage
-      ) {
-        void fetchNextPage();
-      }
-    }
-
-    function handleScroll() {
-      allowFetchAfterUserScroll();
-    }
-
-    function handleScrollIntent() {
-      allowFetchAfterUserScroll({ requireScrollOffset: false });
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (
-        event.key === "End" ||
-        event.key === "PageDown" ||
-        event.key === " " ||
-        event.key === "ArrowDown"
-      ) {
-        allowFetchAfterUserScroll({ requireScrollOffset: false });
-      }
-    }
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("wheel", handleScrollIntent, { passive: true });
-    window.addEventListener("touchmove", handleScrollIntent, { passive: true });
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("wheel", handleScrollIntent);
-      window.removeEventListener("touchmove", handleScrollIntent);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
+  useInfiniteScrollTrigger({
+    sentinelRef,
+    canFetchMoreRef,
+    productsCount: productsQuery.products.length,
     pageSize,
-    productsQuery.products.length,
-  ]);
+    hasNextPage: Boolean(productsQuery.hasNextPage),
+    isFetchingNextPage: productsQuery.isFetchingNextPage,
+    fetchNextPage: () => void productsQuery.fetchNextPage(),
+    onCanFetchMoreChange: setCanFetchMore,
+  });
 
   function handlePageSizeChange(nextPageSize: number) {
     if (nextPageSize === pageSize) {
