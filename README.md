@@ -1,6 +1,6 @@
 # Mini E-commerce Catalog
 
-A senior-level take-home e-commerce mini-app with a Next.js frontend, NestJS backend, PostgreSQL database, Prisma ORM, Docker Compose local setup, and simple GitHub Actions CI.
+A e-commerce mini-app with a Next.js frontend, NestJS backend, PostgreSQL database, Prisma ORM, Docker Compose local setup, and simple GitHub Actions CI.
 
 The app demonstrates cookie-based authentication, server-side session invalidation, brute-force login protection, cursor-paginated product listing, and a reviewer-friendly local workflow.
 
