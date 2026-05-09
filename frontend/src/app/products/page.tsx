@@ -83,6 +83,16 @@ export default function ProductsPage() {
     },
   });
 
+  function handlePageSizeChange(nextPageSize: number) {
+    if (nextPageSize === pageSize) {
+      return;
+    }
+
+    window.scrollTo({ left: 0, top: 0 });
+    queryClient.removeQueries({ queryKey: ["products"] });
+    setPageSize(nextPageSize);
+  }
+
   if (currentUserQuery.isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center px-6">
@@ -108,7 +118,9 @@ export default function ProductsPage() {
               <select
                 className="ml-2 h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none focus:border-slate-900"
                 value={pageSize}
-                onChange={(event) => setPageSize(Number(event.target.value))}
+                onChange={(event) =>
+                  handlePageSizeChange(Number(event.target.value))
+                }
               >
                 {PAGE_SIZE_OPTIONS.map((size) => (
                   <option key={size} value={size}>
