@@ -1,9 +1,9 @@
 "use client";
 
-import { SubmitEvent, useState } from "react";
+import { SubmitEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ApiError, login } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ApiError, getCurrentUser, login } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +12,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const currentUserQuery = useQuery({
+    queryKey: ["current-user"],
+    queryFn: getCurrentUser,
+    retry: false,
+  });
 
   const loginMutation = useMutation({
     mutationFn: () => login(email, password),
@@ -32,6 +37,20 @@ export default function LoginPage() {
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     loginMutation.mutate();
+  }
+
+  useEffect(() => {
+    if (currentUserQuery.data) {
+      router.replace("/products");
+    }
+  }, [currentUserQuery.data, router]);
+
+  if (currentUserQuery.isLoading || currentUserQuery.data) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-6">
+        <p className="text-sm text-slate-600">Checking session...</p>
+      </main>
+    );
   }
 
   return (
