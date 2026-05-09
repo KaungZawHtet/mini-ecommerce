@@ -60,23 +60,6 @@ export function logout() {
   });
 }
 
-export async function logoutWithFallback() {
-  try {
-    return await logout();
-  } catch (error) {
-    const response = await fetch("/api/session/end", {
-      method: "POST",
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw error;
-    }
-
-    return (await response.json()) as { success: boolean };
-  }
-}
-
 export async function getCurrentUser() {
   try {
     return await request<AuthResponse>("/auth/me", {

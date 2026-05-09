@@ -1,13 +1,12 @@
 "use client";
 
-import type { SubmitEvent } from "react";
 import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageSizeSelector } from "./components/page-size-selector";
 import { ProductsList } from "./components/products-list";
 import { useInfiniteProducts } from "./hooks/use-infinite-products";
 import { useRequireAuth } from "./hooks/use-require-auth";
-import { logoutWithFallback } from "@/lib/api";
+import { logout } from "@/lib/api";
 import { useInfiniteScrollTrigger } from "./hooks/use-infinite-scroll-trigger";
 export default function ProductsPage() {
   const queryClient = useQueryClient();
@@ -45,9 +44,7 @@ export default function ProductsPage() {
     setPageSize(nextPageSize);
   }
 
-  async function handleLogout(event?: SubmitEvent<HTMLFormElement>) {
-    event?.preventDefault();
-
+  async function handleLogout() {
     if (isLoggingOut) {
       return;
     }
@@ -55,7 +52,7 @@ export default function ProductsPage() {
     setIsLoggingOut(true);
 
     try {
-      await logoutWithFallback();
+      await logout();
     } finally {
       queryClient.clear();
       window.location.assign("/login");
@@ -87,20 +84,14 @@ export default function ProductsPage() {
               onChange={handlePageSizeChange}
             />
 
-            <form
-              action="/api/session/end"
-              method="post"
-              onSubmit={(event) => void handleLogout(event)}
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              disabled={isLoggingOut}
+              className="inline-flex h-10 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
             >
-              <button
-                type="submit"
-                onPointerDown={() => void handleLogout()}
-                disabled={isLoggingOut}
-                className="inline-flex h-10 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
-              >
-                {isLoggingOut ? "Logging out..." : "Logout"}
-              </button>
-            </form>
+              {isLoggingOut ? "Logging out..." : "Logout"}
+            </button>
           </div>
         </div>
       </header>
