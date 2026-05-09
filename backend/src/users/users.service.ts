@@ -12,15 +12,21 @@ export class UsersService {
     });
   }
 
-  incrementFailedLoginAttempts(
-    userId: string,
-    failedLoginAttempts: number,
-    lockedUntil: Date | null,
-  ): Promise<User> {
+  incrementFailedLoginAttempts(userId: string): Promise<User> {
     return this.prisma.user.update({
       where: { id: userId },
       data: {
-        failedLoginAttempts,
+        failedLoginAttempts: {
+          increment: 1,
+        },
+      },
+    });
+  }
+
+  setLoginLockout(userId: string, lockedUntil: Date): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
         lockedUntil,
       },
     });

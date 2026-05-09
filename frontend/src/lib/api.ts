@@ -20,13 +20,16 @@ async function request<T>(
   options: ApiRequestOptions = {},
 ): Promise<T> {
   const { redirectOnUnauthorized = true, ...fetchOptions } = options;
+  const headers = new Headers(fetchOptions.headers);
+
+  if (typeof fetchOptions.body === "string" && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const response = await fetch(`${API_URL}${path}`, {
     ...fetchOptions,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...fetchOptions.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {

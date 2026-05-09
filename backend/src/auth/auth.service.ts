@@ -42,7 +42,7 @@ export class AuthService {
     );
 
     if (!isValidPassword) {
-      await this.recordFailedLogin(user.id, user.failedLoginAttempts);
+      await this.recordFailedLogin(user.id);
       throw new UnauthorizedException(GENERIC_LOGIN_ERROR);
     }
 
@@ -170,21 +170,15 @@ export class AuthService {
     });
   }
 
-  private async recordFailedLogin(
-    userId: string,
-    currentFailedAttempts: number,
-  ) {
-    const failedLoginAttempts = currentFailedAttempts + 1;
-    const lockedUntil =
-      failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS
-        ? new Date(Date.now() + LOGIN_LOCKOUT_MS)
-        : null;
+  private async recordFailedLogin(userId: string) {
+    const user = await this.usersService.incrementFailedLoginAttempts(userId);
 
-    await this.usersService.incrementFailedLoginAttempts(
-      userId,
-      failedLoginAttempts,
-      lockedUntil,
-    );
+    if (user.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+      await this.usersService.setLoginLockout(
+        userId,
+        new Date(Date.now() + LOGIN_LOCKOUT_MS),
+      );
+    }
   }
 
   private toAuthenticatedUser(user: {
