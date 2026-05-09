@@ -1,9 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { SESSION_COOKIE_NAME } from './constants';
@@ -13,6 +8,17 @@ import { AuthenticatedRequest } from './types';
 export class AuthGuard implements CanActivate {
   constructor(private readonly authService: AuthService) {}
 
+  /**
+
+  * Protects routes that require an authenticated session.
+  *
+  * The guard reads the session token from the request cookies, validates it
+  * through AuthService, and attaches the authenticated user/session to the
+  * request so controllers can safely use them.
+  *
+  * If the session is missing, expired, revoked, or inactive for too long,
+  * the request is rejected and any stale session cookie is cleared.
+  */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const http = context.switchToHttp();
     const request = http.getRequest<AuthenticatedRequest>();
@@ -30,10 +36,6 @@ export class AuthGuard implements CanActivate {
     } catch (error) {
       if (sessionTokens.length > 0) {
         this.authService.clearSessionCookie(response);
-      }
-
-      if (error instanceof UnauthorizedException) {
-        throw error;
       }
 
       throw error;

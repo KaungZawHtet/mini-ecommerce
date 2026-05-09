@@ -18,6 +18,8 @@ import {
 
 @Injectable()
 export class AuthService {
+  private readonly dummyPasswordHash =
+    '$2b$12$somePrecomputedValidBcryptHashHere'; // In production, we may use a securely generated hash of a random password or may even stored at more secure place like environment variable or secret manager
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
@@ -28,7 +30,7 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
 
     if (!user) {
-      await bcrypt.compare(loginDto.password, await bcrypt.hash('invalid', 12));
+      await bcrypt.compare(loginDto.password, this.dummyPasswordHash);
       throw new UnauthorizedException(GENERIC_LOGIN_ERROR);
     }
 
@@ -76,11 +78,22 @@ export class AuthService {
     return { success: true };
   }
 
+  /**
+ * Validates one or more possible session tokens from the request cookies.
+ * Multiple tokens are supported defensively because browsers may send
+ * duplicate cookies for different paths/domains.
+
+ */
   async validateSessionTokens(rawTokens: readonly string[]) {
     if (rawTokens.length === 0) {
       throw new UnauthorizedException();
     }
 
+    /**
+     * If there are multiple session_token cookies, try each one.
+     * If one is valid, accept it.
+     * If all are invalid, reject.
+     * */
     for (const rawToken of rawTokens) {
       try {
         return await this.validateSessionToken(rawToken);
@@ -123,7 +136,7 @@ export class AuthService {
       SESSION_INACTIVITY_TIMEOUT_MS
     ) {
       await this.revokeSession(session.id);
-      throw new UnauthorizedException('Session expired due to inactivity');
+      throw new UnauthorizedException(); //throw because Session expired due to inactivity
     }
 
     const updatedSession = await this.prisma.session.update({
@@ -170,6 +183,11 @@ export class AuthService {
     });
   }
 
+  /**
+ * Records a failed login attempt and locks the account temporarily once
+ * the configured threshold is reached.
+
+ */
   private async recordFailedLogin(userId: string) {
     const user = await this.usersService.incrementFailedLoginAttempts(userId);
 
