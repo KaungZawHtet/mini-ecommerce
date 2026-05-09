@@ -51,6 +51,7 @@ export function login(email: string, password: string) {
   return request<AuthResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+    redirectOnUnauthorized: false,
   });
 }
 

@@ -7,6 +7,7 @@ type UseInfiniteScrollTriggerParams = {
   canFetchMoreRef: RefObject<boolean>;
   productsCount: number;
   pageSize: number;
+  canFetchMore: boolean;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
@@ -18,6 +19,7 @@ export function useInfiniteScrollTrigger({
   canFetchMoreRef,
   productsCount,
   pageSize,
+  canFetchMore,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
@@ -50,6 +52,7 @@ export function useInfiniteScrollTrigger({
   }, [
     sentinelRef,
     canFetchMoreRef,
+    canFetchMore,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -72,14 +75,7 @@ export function useInfiniteScrollTrigger({
       canFetchMoreRef.current = true;
       onCanFetchMoreChange(true);
 
-      const sentinel = sentinelRef.current;
-
-      if (
-        sentinel &&
-        sentinel.getBoundingClientRect().top <= window.innerHeight + 120 &&
-        hasNextPage &&
-        !isFetchingNextPage
-      ) {
+      if (hasNextPage && !isFetchingNextPage) {
         fetchNextPage();
       }
     }

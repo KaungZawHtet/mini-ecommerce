@@ -12,6 +12,7 @@ export default function ProductsPage() {
   const queryClient = useQueryClient();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const canFetchMoreRef = useRef(false);
+  const isLoggingOutRef = useRef(false);
   const [pageSize, setPageSize] = useState(20);
   const [canFetchMore, setCanFetchMore] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -26,6 +27,7 @@ export default function ProductsPage() {
     canFetchMoreRef,
     productsCount: productsQuery.products.length,
     pageSize,
+    canFetchMore,
     hasNextPage: Boolean(productsQuery.hasNextPage),
     isFetchingNextPage: productsQuery.isFetchingNextPage,
     fetchNextPage: () => void productsQuery.fetchNextPage(),
@@ -44,19 +46,18 @@ export default function ProductsPage() {
     setPageSize(nextPageSize);
   }
 
-  async function handleLogout() {
-    if (isLoggingOut) {
+  function handleLogout() {
+    if (isLoggingOutRef.current) {
       return;
     }
 
+    isLoggingOutRef.current = true;
     setIsLoggingOut(true);
 
-    try {
-      await logout();
-    } finally {
+    void logout().finally(() => {
       queryClient.clear();
       window.location.assign("/login");
-    }
+    });
   }
 
   if (currentUserQuery.isLoading) {
@@ -86,7 +87,10 @@ export default function ProductsPage() {
 
             <button
               type="button"
-              onClick={() => void handleLogout()}
+              onClick={handleLogout}
+              // Some Chrome automation clicks did not trigger onClick reliably.
+              // onMouseUp gives logout a second trigger, and isLoggingOutRef prevents duplicate requests.
+              onMouseUp={handleLogout}
               disabled={isLoggingOut}
               className="inline-flex h-10 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
             >
