@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("demo@example.com");
   const [password, setPassword] = useState("Password123!");
   const [errorMessage, setErrorMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const loginMutation = useMutation({
     mutationFn: () => login(email, password),
@@ -62,15 +63,27 @@ export default function LoginPage() {
 
           <label className="mt-4 block text-sm font-medium text-slate-700">
             Password
-            <input
-              className="mt-2 h-11 w-full rounded-md border border-slate-300 px-3 text-slate-950 outline-none transition focus:border-slate-900"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              disabled={loginMutation.isPending}
-              required
-            />
+            <div className="relative mt-2">
+              <input
+                className="h-11 w-full rounded-md border border-slate-300 px-3 pr-16 text-slate-950 outline-none transition focus:border-slate-900"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                disabled={loginMutation.isPending}
+                required
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                disabled={loginMutation.isPending}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-600 transition hover:text-slate-950 disabled:cursor-not-allowed disabled:text-slate-400"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </label>
 
           {errorMessage ? (
