@@ -133,6 +133,9 @@ Endpoint:
 GET /products?pageSize=20&cursor=<cursor>
 ```
 
+The products endpoint requires a valid authenticated session. Browser requests
+include the HTTP-only `session_token` cookie with `credentials: "include"`.
+
 Response:
 
 ```json
@@ -178,6 +181,9 @@ POST /auth/logout
 GET /auth/me
 GET /products?pageSize=20&cursor=<cursor>
 ```
+
+`GET /products` is protected by the same server-side session guard used by
+`/auth/me` and `/auth/logout`.
 
 Frontend:
 
