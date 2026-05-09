@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageSizeSelector } from "./components/page-size-selector";
@@ -45,7 +45,7 @@ export default function ProductsPage() {
     setPageSize(nextPageSize);
   }
 
-  async function handleLogout(event?: FormEvent<HTMLFormElement>) {
+  async function handleLogout(event?: SubmitEvent<HTMLFormElement>) {
     event?.preventDefault();
 
     if (isLoggingOut) {
