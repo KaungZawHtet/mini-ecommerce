@@ -1,12 +1,13 @@
 import { Response } from 'express';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
-import { User } from '@prisma/client';
+import { Session, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import {
   GENERIC_LOGIN_ERROR,
   LOGIN_LOCKOUT_MS,
+  SESSION_INACTIVITY_TIMEOUT_MS,
   SESSION_COOKIE_NAME,
 } from './constants';
 import { AuthService } from './auth.service';
@@ -35,6 +36,7 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
     service = new AuthService(
       prisma as unknown as PrismaService,
       usersService as unknown as UsersService,
@@ -42,6 +44,7 @@ describe('AuthService', () => {
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     jest.restoreAllMocks();
   });
 
@@ -120,6 +123,39 @@ describe('AuthService', () => {
     expect(prisma.session.create).not.toHaveBeenCalled();
     expect(response.cookie).not.toHaveBeenCalled();
   });
+
+  it('revokes and rejects sessions inactive for more than 30 minutes', async () => {
+    const now = new Date('2026-01-01T01:00:00.000Z');
+    jest.useFakeTimers().setSystemTime(now);
+
+    const rawToken = 'raw-session-token';
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+    const user = await makeUser({ password: 'Password123!' });
+    const session = makeSession({
+      tokenHash,
+      userId: user.id,
+      lastActivityAt: new Date(
+        now.getTime() - SESSION_INACTIVITY_TIMEOUT_MS - 1,
+      ),
+      expiresAt: new Date(now.getTime() + 60_000),
+    });
+
+    prisma.session.findUnique.mockResolvedValue({
+      ...session,
+      user,
+    });
+
+    await expect(service.validateSessionTokens([rawToken])).rejects.toThrow();
+
+    expect(prisma.session.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: session.id,
+        revokedAt: null,
+      },
+      data: { revokedAt: now },
+    });
+    expect(prisma.session.update).not.toHaveBeenCalled();
+  });
 });
 
 async function makeUser({
@@ -139,5 +175,29 @@ async function makeUser({
     lockedUntil: null,
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+function makeSession({
+  tokenHash,
+  userId,
+  lastActivityAt,
+  expiresAt,
+}: {
+  tokenHash: string;
+  userId: string;
+  lastActivityAt: Date;
+  expiresAt: Date;
+}): Session {
+  const now = new Date('2026-01-01T00:00:00.000Z');
+
+  return {
+    id: 'session-1',
+    userId,
+    tokenHash,
+    createdAt: now,
+    lastActivityAt,
+    expiresAt,
+    revokedAt: null,
   };
 }

@@ -49,6 +49,7 @@ Install and prepare the backend:
 ```bash
 cd backend
 npm ci
+cp .env.example .env
 npm run prisma:generate
 npx prisma migrate deploy
 npm run db:seed
@@ -60,6 +61,7 @@ Install and run the frontend:
 ```bash
 cd frontend
 npm ci
+cp .env.example .env.local
 npm run dev
 ```
 
@@ -162,6 +164,7 @@ The products page includes:
 - Duplicate-fetch prevention while a next page is already loading
 - Logout button
 - Redirect to `/login` when authentication fails
+- Redirect from `/login` to `/products` when an authenticated user visits the login page
 
 Changing page size changes the query key, so pagination resets from the first page.
 
@@ -185,6 +188,7 @@ Frontend:
 ```
 
 The root page redirects to `/products` when authenticated and `/login` otherwise.
+The login page is guest-only; authenticated users who visit `/login` are redirected to `/products`.
 
 ## Running Checks
 
