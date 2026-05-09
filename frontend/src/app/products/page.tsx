@@ -1,19 +1,21 @@
 "use client";
 
+import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { logout } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
 import { PageSizeSelector } from "./components/page-size-selector";
 import { ProductsList } from "./components/products-list";
 import { useInfiniteProducts } from "./hooks/use-infinite-products";
 import { useRequireAuth } from "./hooks/use-require-auth";
+import { logoutWithFallback } from "@/lib/api";
 
 export default function ProductsPage() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const canFetchMoreRef = useRef(false);
   const [pageSize, setPageSize] = useState(20);
+  const [canFetchMore, setCanFetchMore] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const currentUserQuery = useRequireAuth();
   const productsQuery = useInfiniteProducts({
     pageSize,
@@ -33,11 +35,16 @@ export default function ProductsPage() {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        if (
+          entry.isIntersecting &&
+          canFetchMoreRef.current &&
+          hasNextPage &&
+          !isFetchingNextPage
+        ) {
           void fetchNextPage();
         }
       },
-      { rootMargin: "320px" },
+      { rootMargin: "120px" },
     );
 
     observer.observe(sentinel);
@@ -45,22 +52,100 @@ export default function ProductsPage() {
     return () => observer.disconnect();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSettled: async () => {
-      await queryClient.clear();
-      router.replace("/login");
-    },
-  });
+  useEffect(() => {
+    function allowFetchAfterUserScroll({
+      requireScrollOffset = true,
+    }: {
+      requireScrollOffset?: boolean;
+    } = {}) {
+      if (
+        canFetchMoreRef.current ||
+        (requireScrollOffset && window.scrollY < 24) ||
+        productsQuery.products.length < pageSize
+      ) {
+        return;
+      }
+
+      canFetchMoreRef.current = true;
+      setCanFetchMore(true);
+
+      const sentinel = sentinelRef.current;
+
+      if (
+        sentinel &&
+        sentinel.getBoundingClientRect().top <= window.innerHeight + 120 &&
+        hasNextPage &&
+        !isFetchingNextPage
+      ) {
+        void fetchNextPage();
+      }
+    }
+
+    function handleScroll() {
+      allowFetchAfterUserScroll();
+    }
+
+    function handleScrollIntent() {
+      allowFetchAfterUserScroll({ requireScrollOffset: false });
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (
+        event.key === "End" ||
+        event.key === "PageDown" ||
+        event.key === " " ||
+        event.key === "ArrowDown"
+      ) {
+        allowFetchAfterUserScroll({ requireScrollOffset: false });
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("wheel", handleScrollIntent, { passive: true });
+    window.addEventListener("touchmove", handleScrollIntent, { passive: true });
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("wheel", handleScrollIntent);
+      window.removeEventListener("touchmove", handleScrollIntent);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    pageSize,
+    productsQuery.products.length,
+  ]);
 
   function handlePageSizeChange(nextPageSize: number) {
     if (nextPageSize === pageSize) {
       return;
     }
 
+    canFetchMoreRef.current = false;
+    setCanFetchMore(false);
     window.scrollTo({ left: 0, top: 0 });
     queryClient.removeQueries({ queryKey: ["products"] });
     setPageSize(nextPageSize);
+  }
+
+  async function handleLogout(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+
+    if (isLoggingOut) {
+      return;
+    }
+
+    setIsLoggingOut(true);
+
+    try {
+      await logoutWithFallback();
+    } finally {
+      queryClient.clear();
+      window.location.assign("/login");
+    }
   }
 
   if (currentUserQuery.isLoading) {
@@ -88,14 +173,20 @@ export default function ProductsPage() {
               onChange={handlePageSizeChange}
             />
 
-            <button
-              type="button"
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-              className="h-10 rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+            <form
+              action="/api/session/end"
+              method="post"
+              onSubmit={(event) => void handleLogout(event)}
             >
-              {logoutMutation.isPending ? "Signing out..." : "Logout"}
-            </button>
+              <button
+                type="submit"
+                onPointerDown={() => void handleLogout()}
+                disabled={isLoggingOut}
+                className="inline-flex h-10 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                {isLoggingOut ? "Logging out..." : "Logout"}
+              </button>
+            </form>
           </div>
         </div>
       </header>
@@ -107,6 +198,7 @@ export default function ProductsPage() {
           isError={productsQuery.isError}
           isFetchingNextPage={productsQuery.isFetchingNextPage}
           hasNextPage={Boolean(productsQuery.hasNextPage)}
+          canFetchMore={canFetchMore}
           sentinelRef={sentinelRef}
           onRetry={() => void productsQuery.refetch()}
         />

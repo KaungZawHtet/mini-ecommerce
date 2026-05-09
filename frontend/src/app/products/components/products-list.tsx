@@ -10,6 +10,7 @@ export function ProductsList({
   isError,
   isFetchingNextPage,
   hasNextPage,
+  canFetchMore,
   sentinelRef,
   onRetry,
 }: {
@@ -18,6 +19,7 @@ export function ProductsList({
   isError: boolean;
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
+  canFetchMore: boolean;
   sentinelRef: RefObject<HTMLDivElement | null>;
   onRetry: () => void;
 }) {
@@ -69,8 +71,10 @@ export function ProductsList({
       <div className="flex justify-center py-6">
         {isFetchingNextPage ? (
           <p className="text-sm text-slate-600">Loading more...</p>
-        ) : hasNextPage ? (
+        ) : hasNextPage && canFetchMore ? (
           <p className="text-sm text-slate-500">Scroll for more</p>
+        ) : hasNextPage ? (
+          <p className="text-sm text-slate-500">Scroll down for more</p>
         ) : (
           <p className="text-sm text-slate-500">End of catalog</p>
         )}

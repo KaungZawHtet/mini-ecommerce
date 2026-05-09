@@ -10,7 +10,7 @@ export function ProductCard({
 }) {
   return (
     <article className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="aspect-[4/3] bg-slate-100">
+      <div className="aspect-4/3 bg-slate-100">
         <Image
           src={product.imageUrl}
           alt={product.name}
