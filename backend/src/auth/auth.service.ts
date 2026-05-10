@@ -109,6 +109,17 @@ export class AuthService {
     throw new UnauthorizedException();
   }
 
+  /**
+   * Validates a raw session token from the HTTP-only cookie.
+   *
+   * The raw token is never stored in PostgreSQL. During login, only its SHA-256
+   * hash is saved. To validate a request, we hash the incoming cookie token and
+   * look up the matching session by tokenHash.
+   *
+   * A session is rejected if it is missing, revoked, past its absolute expiry,
+   * or inactive for more than the configured inactivity timeout. Valid sessions
+   * refresh lastActivityAt so active users remain signed in.
+   */
   private async validateSessionToken(rawToken: string) {
     if (!rawToken) {
       throw new UnauthorizedException();
@@ -184,10 +195,9 @@ export class AuthService {
   }
 
   /**
- * Records a failed login attempt and locks the account temporarily once
- * the configured threshold is reached.
-
- */
+   * Records a failed login attempt and locks the account temporarily once
+   * the configured threshold is reached.
+   */
   private async recordFailedLogin(userId: string) {
     const user = await this.usersService.incrementFailedLoginAttempts(userId);
 

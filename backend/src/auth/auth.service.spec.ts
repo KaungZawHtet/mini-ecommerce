@@ -91,6 +91,11 @@ describe('AuthService', () => {
     );
   });
 
+  /**
+   * This test simulates a user who already has 4 failed attempts.
+   * One more wrong password should become the 5th failed attempt and trigger
+   * the temporary lockout behavior.
+   */
   it('increments failed logins atomically and locks after the fifth failure', async () => {
     const now = Date.now();
     jest.spyOn(Date, 'now').mockReturnValue(now);
@@ -119,6 +124,11 @@ describe('AuthService', () => {
       user.id,
       new Date(now + LOGIN_LOCKOUT_MS),
     );
+
+    /**
+     * A failed login must not reset failed attempts, create a session,
+     * or set a session cookie.
+     */
     expect(usersService.resetFailedLoginAttempts).not.toHaveBeenCalled();
     expect(prisma.session.create).not.toHaveBeenCalled();
     expect(response.cookie).not.toHaveBeenCalled();
@@ -154,6 +164,10 @@ describe('AuthService', () => {
       },
       data: { revokedAt: now },
     });
+
+    /**
+     * Expired inactive sessions should be revoked, not refreshed.
+     */
     expect(prisma.session.update).not.toHaveBeenCalled();
   });
 });

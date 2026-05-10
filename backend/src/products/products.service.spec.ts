@@ -20,6 +20,11 @@ describe('ProductsService', () => {
     service = new ProductsService(prisma as unknown as PrismaService);
   });
 
+  /**
+   * The assignment requires page size to be configurable but restricted
+   * between 5 and 50. These cases prove the DTO rejects values outside
+   * that range and non-integer values.
+   */
   it('validates pageSize between 5 and 50', async () => {
     await expectValidationErrorsForPageSize(4);
     await expectValidationErrorsForPageSize(51);
@@ -30,6 +35,12 @@ describe('ProductsService', () => {
     await expect(validate(validQuery)).resolves.toHaveLength(0);
   });
 
+  /**
+   * The service fetches one extra item to know whether another page exists.
+   * For pageSize = 2, Prisma returns 3 items:
+   * - 2 items are returned to the client
+   * - the extra item proves hasMore should be true
+   */
   it('returns the expected cursor pagination response shape', async () => {
     prisma.product.findMany.mockResolvedValue([
       makeProduct('product-3', '2026-01-01T00:03:00.000Z'),
@@ -74,6 +85,10 @@ describe('ProductsService', () => {
     expect(response.hasMore).toBe(true);
   });
 
+  /**
+   * Invalid cursors should fail fast with 400 Bad Request.
+   * The service should not send malformed cursor values to the database.
+   */
   it('rejects malformed cursors before querying products', async () => {
     await expect(
       service.findMany({ pageSize: 20, cursor: 'not-a-valid-cursor' }),
@@ -83,6 +98,10 @@ describe('ProductsService', () => {
   });
 });
 
+/**
+ * Helper for checking that invalid pageSize values are rejected by the DTO.
+ * This keeps the test cases short while still verifying the validation boundary.
+ */
 async function expectValidationErrorsForPageSize(pageSize: number) {
   const query = plainToInstance(GetProductsQueryDto, { pageSize });
   const errors = await validate(query);

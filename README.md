@@ -97,18 +97,6 @@ Authentication uses server-side sessions with an HTTP-only cookie named `session
 
 I chose server-side sessions with an HTTP-only cookie because the assignment requires both persistent login across browser restarts and automatic invalidation after 30 minutes of inactivity. A purely stateless JWT can handle fixed expiration, but it cannot reliably enforce inactivity timeout or immediate logout without adding server-side state. The server-side session model keeps the browser token opaque, stores only a hashed token in the database, and allows the backend to revoke expired or inactive sessions immediately.
 
-Session behavior:
-
-- The browser receives only an opaque `session_token` cookie.
-- The raw session token is never stored in PostgreSQL.
-- PostgreSQL stores only a SHA-256 hash of the session token.
-- Cookies are `httpOnly`, `sameSite: lax`, and persistent for about 7 days.
-- `secure` is enabled in production and disabled for local HTTP development.
-- Protected requests update `lastActivityAt`.
-- Sessions inactive for more than 30 minutes are revoked and rejected with `401`.
-- Logout revokes the server-side session and clears the cookie.
-
-The frontend never stores auth tokens in `localStorage`, `sessionStorage`, or JavaScript-accessible token state. API requests use `credentials: "include"` so the browser sends the HTTP-only cookie.
 
 ## Brute-force Protection
 
@@ -127,7 +115,9 @@ The API does not reveal whether an email exists.
 
 ## Product Pagination
 
-The product catalog uses cursor-based pagination rather than offset pagination. Cursor pagination is more stable for infinite scrolling because it avoids skipped or duplicated records when new products are inserted. Products are ordered deterministically by creation date and ID, and the backend validates the requested page size to ensure it stays between 5 and 50 items.
+The product catalog uses cursor-based pagination instead of offset pagination. This is a better fit for infinite scrolling because it reduces the chance (bug) of skipped or duplicated records when new products are inserted.
+
+Products are ordered consistently by `createdAt DESC` and `id DESC`. The backend also validates `pageSize` to ensure each request asks for between 5 and 50 items.
 
 Endpoint:
 
@@ -148,30 +138,9 @@ Response:
 }
 ```
 
-Pagination details:
-
-- `pageSize` must be between 5 and 50.
-- Invalid `pageSize` returns `400 Bad Request`.
-- Products are ordered by `createdAt DESC, id DESC`.
-- The database has an index on `createdAt` and `id` to support this ordering.
-- Seed data includes 100 products.
-
 ## Frontend Infinite Scroll
 
 The frontend uses TanStack Query `useInfiniteQuery` for paginated product fetching. An `IntersectionObserver` watches a bottom sentinel and calls `fetchNextPage()` when the user reaches the end of the current list.
-
-The products page includes:
-
-- Page size selector
-- Loading state
-- Error state with retry
-- Empty state
-- Duplicate-fetch prevention while a next page is already loading
-- Logout button
-- Redirect to `/login` when authentication fails
-- Redirect from `/login` to `/products` when an authenticated user visits the login page
-
-Changing page size changes the query key, so pagination resets from the first page.
 
 ## API Routes
 
@@ -183,9 +152,6 @@ POST /auth/logout
 GET /auth/me
 GET /products?pageSize=20&cursor=<cursor>
 ```
-
-`GET /products` is protected by the same server-side session guard used by
-`/auth/me` and `/auth/logout`.
 
 Frontend:
 
@@ -250,16 +216,13 @@ The workflow:
 - Runs frontend lint
 - Builds the frontend
 
-There are no deployment steps and no Docker image publishing. PostgreSQL is not started in CI because the current automated tests do not require database access.
-
 ## Known Trade-offs
 
 - This project is optimized for the take-home scope.
 - Docker Compose is used for reviewer convenience.
 - Server-side sessions are stored in PostgreSQL for simplicity.
 - In production, Redis could be used for faster session and rate-limit storage.
-- Stronger bot protection could be added.
 - More E2E tests could be added.
-- Product virtualization could be added for extremely large lists.
 - Observability, audit logs, and monitoring could be added for production.
 - The Docker setup is intentionally simple and avoids Nginx, Kubernetes, or cloud deployment complexity.
+- Some explanatory comments are included for reviewer convenience; in a long-term production codebase, I would align comment style with the team’s conventions.
