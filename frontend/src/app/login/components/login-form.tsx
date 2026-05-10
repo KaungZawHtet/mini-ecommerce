@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { SubmitEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError, login } from "@/lib/api";
@@ -30,10 +30,10 @@ export function LoginForm() {
         },
     });
 
-    const handleSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
+    function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
         loginMutation.mutate();
-    };
+    }
 
     return (
         <section className="w-full max-w-sm">
