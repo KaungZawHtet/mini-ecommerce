@@ -19,7 +19,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  @Throttle({ default: { limit: 5, ttl: 60_000, blockDuration: 60_000 } })
+  @Throttle({ default: { limit: 5, ttl: 60_000, blockDuration: 60_000 } }) // NOTE: Allow only 5 requests within 60 seconds. If the user exceeds that, block them for 60 seconds.
   login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
     return this.authService.login(loginDto, res);
   }

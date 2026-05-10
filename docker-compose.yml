@@ -4,6 +4,8 @@ services:
     environment:
       POSTGRES_DB: mini_ecommerce
       POSTGRES_USER: postgres
+      # Local development credentials for reviewer convenience.
+      # In production, use environment variables or a secrets manager.
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
@@ -21,6 +23,8 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3001
+      # Local Docker database URL for reviewer convenience.
+      # In production, may use environment variables or a secrets manager.
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mini_ecommerce?schema=public
     ports:
       - "3001:3001"

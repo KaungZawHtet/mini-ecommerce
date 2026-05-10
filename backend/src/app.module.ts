@@ -12,6 +12,8 @@ import { UsersModule } from './users/users.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+
+    // NOTE: Default rate limit is 60 requests per 60 seconds.
     ThrottlerModule.forRoot([
       {
         name: 'default',

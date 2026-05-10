@@ -14,6 +14,11 @@ type UseInfiniteScrollTriggerParams = {
   onCanFetchMoreChange: (canFetchMore: boolean) => void;
 };
 
+/**
+ * Prevents infinite scroll from auto-loading extra pages on first render.
+ *
+ * More products are loaded only after the user tries to scroll down.
+ */
 export function useInfiniteScrollTrigger({
   sentinelRef,
   canFetchMoreRef,

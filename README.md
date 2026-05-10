@@ -1,8 +1,8 @@
 # Mini E-commerce Catalog
 
-A e-commerce mini-app with a Next.js frontend, NestJS backend, PostgreSQL database, Prisma ORM, Docker Compose local setup, and simple GitHub Actions CI.
+An e-commerce mini-app with a Next.js frontend, NestJS backend, PostgreSQL database, Prisma ORM, Docker Compose local setup, and simple GitHub Actions CI.
 
-The app demonstrates cookie-based authentication, server-side session invalidation, brute-force login protection, cursor-paginated product listing, and a reviewer-friendly local workflow.
+The app demonstrates HTTP-only cookie authentication, server-side session invalidation, brute-force login protection, cursor-paginated product listing, protected product access, and a reviewer-friendly local workflow.
 
 ## Tech Stack
 
@@ -28,6 +28,8 @@ This starts:
 - PostgreSQL: localhost:5432
 
 The backend container runs Prisma migrations and seed data at startup.
+
+> Note: Docker Compose uses simple local database credentials for reviewer convenience. In production, credentials should be provided through environment variables or a secrets manager, and PostgreSQL should not be exposed publicly.
 
 ## Demo Credentials
 
@@ -151,7 +153,7 @@ Pagination details:
 - `pageSize` must be between 5 and 50.
 - Invalid `pageSize` returns `400 Bad Request`.
 - Products are ordered by `createdAt DESC, id DESC`.
-- The database has an index for this ordering.
+- The database has an index on `createdAt` and `id` to support this ordering.
 - Seed data includes 100 products.
 
 ## Frontend Infinite Scroll

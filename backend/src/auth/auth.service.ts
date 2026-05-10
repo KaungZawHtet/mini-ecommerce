@@ -19,7 +19,7 @@ import {
 @Injectable()
 export class AuthService {
   private readonly dummyPasswordHash =
-    '$2b$12$somePrecomputedValidBcryptHashHere'; // In production, we may use a securely generated hash of a random password or may even stored at more secure place like environment variable or secret manager
+    '$2b$12$somePrecomputedValidBcryptHashHere'; // NOTE: In production, we may use a securely generated hash of a random password or may even stored at more secure place like environment variable or secret manager
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
